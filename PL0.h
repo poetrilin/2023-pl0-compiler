@@ -143,7 +143,7 @@ int  kk;
 int  err;
 int  cx;         // index of current instruction to be generated.
 int  level = 0;
-int  tx = 0;
+int  tx = 0;     // current table index
 
 char line[80];
 
