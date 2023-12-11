@@ -441,7 +441,7 @@ void initializer(void){
 					last_arr->size = array_index;
 					dx += last_arr->size;
 					last_arr->address = dx - 1;
-					printf("allocate for array: %d\n", dx-1);
+					//printf("allocate for array: %d\n", dx-1);
 				}
 			}
 			else {
@@ -542,7 +542,7 @@ void countsize(void){//calculate the size of the array
 					last_arr->size = array_index;
 					dx += last_arr->size;
 					last_arr->address = dx - 1;
-					printf("allocate for array: %d\n", dx-1);
+					//printf("allocate for array: %d\n", dx-1);
 				}
 			}
 			else {
@@ -641,10 +641,12 @@ void factor(symset fsys){
 					mask* mk;
 				case ID_CONSTANT:
 					gen(LIT, 0, table[i].value);
+					getsym();
 					break;
 				case ID_VARIABLE:
 					mk = (mask*) &table[i];
 					gen(LOD, level - mk->level, mk->address);
+					getsym();
 					break;
 				case ID_PROCEDURE:
 					error(21); // Procedure identifier can not be in an expression.
@@ -659,9 +661,9 @@ void factor(symset fsys){
 					array_visit(arr_index,0,set);//visit the array
 					gen(OPR,0,OPR_MIN);
 					gen(LDA,0,0);//load the address of the array
+					break;
 				} // switch
 			}
-			getsym();
 		}
 		else if (sym == SYM_NUMBER){
 			if (num > MAXADDRESS){
