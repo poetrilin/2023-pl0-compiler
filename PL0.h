@@ -1,9 +1,9 @@
 #include <stdio.h>
 
-#define NRW        11     // number of reserved words
+#define NRW        12     // number of reserved words
 #define TXMAX      500    // length of identifier table
 #define MAXNUMLEN  14     // maximum number of digits in numbers
-#define NSYM       10     // maximum number of symbols in array ssym and csym
+#define NSYM       14     // maximum number of symbols in array ssym and csym
 #define MAXIDLEN   10     // length of identifiers
 
 #define MAXADDRESS 32767  // maximum address
@@ -13,7 +13,7 @@
 #define MAXSYM     30     // maximum number of symbols  
 
 #define STACKSIZE  1000   // maximum storage
-
+#define MAX_DIM    100    // maximum dimensions of an array
 enum symtype
 {
     SYM_NULL,       // 空符号
@@ -45,7 +45,12 @@ enum symtype
     SYM_CALL,       // 过程调用符号 call
     SYM_CONST,      // 常量声明符号 const
     SYM_VAR,        // 变量声明符号 var
-    SYM_PROCEDURE   // 过程声明符号 procedure
+    SYM_PROCEDURE,  // 过程声明符号 procedure
+    SYM_LSQUAREBRACKET, // 左中括号
+	SYM_RSQUAREBRACKET, // 右中括号
+	SYM_PRINT,          // print
+	SYM_LBRACKET,       // 左大括号
+	SYM_RBRACKET        // 右大括号
 };
 
 // 枚举类型 idtype 定义了标识符的类型，包括常量、变量和过程
@@ -53,7 +58,8 @@ enum idtype
 {
     ID_CONSTANT,   // 常量标识符
     ID_VARIABLE,   // 变量标识符
-    ID_PROCEDURE   // 过程标识符
+    ID_PROCEDURE,  // 过程标识符
+    ID_ARRAY       // 数组标识符
 };
 
 // 枚举类型 opcode 定义了指令的操作码
@@ -66,7 +72,14 @@ enum opcode
     CAL,  // 调用过程
     INT,  // 初始化栈顶指针
     JMP,  // 无条件跳转
-    JPC   // 条件跳转
+    JPC,  // 条件跳转
+    PRT,  // 打印
+    STA,  // 将栈顶内容存入数组
+    LDA,  // 将数组元素放入栈顶
+    LEA,  // 将数组地址放入栈顶
+    STI,  // 将栈顶内容存入指针所指的地址
+    RES,  // 申请空间
+    RET   // 返回
 };
 
 // 枚举类型 oprcode 定义了运算符的操作码
@@ -123,13 +136,20 @@ char* err_msg[] =
 /* 23 */    "The symbol can not be followed by a factor.",
 /* 24 */    "The symbol can not be as the beginning of an expression.",
 /* 25 */    "The number is too great.",
-/* 26 */    "",
-/* 27 */    "",
-/* 28 */    "",
-/* 29 */    "",
-/* 30 */    "",
-/* 31 */    "",
-/* 32 */    "There are too many levels."
+/* 26 */    "Must define the dimension size of an array.",
+/* 27 */    "Missing ']'.",
+/* 28 */    "Function print should be used in print(...) format.",
+/* 29 */    "Wrong argument type for print",
+/* 30 */    "Only constant identifier is allowed for array declaration.",
+/* 31 */    "Too many dimensions for array declaration.",
+/* 32 */    "There are too many levels.",
+/* 33 */    "Array dimension can not be zero or negative.",
+/* 34 */    "Missing dimension(s) in array element assignment.",
+/* 35 */    "Missing '['.",
+/* 36 */    "Missing '{'.",
+/* 37 */    "Illegal initialization.",
+/* 38 */    "Missing '}'."
+/* 39 */	"The empty dimension must be the first one."
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -144,7 +164,8 @@ int  err;
 int  cx;         // index of current instruction to be generated.
 int  level = 0;
 int  tx = 0;     // current table index
-
+int  arr_tx = 0;  // current array table index
+struct _array_info* last_arr; //pointer to last array information read
 char line[80];
 
 instruction code[CXMAX];
@@ -156,7 +177,7 @@ char* word[NRW + 1] =
 {
 	"", /* place holder */
 	"begin", "call", "const", "do", "end","if",
-	"odd", "procedure", "then", "var", "while"
+	"odd", "procedure", "then", "var", "while", "print"
 };
 
 /**
@@ -165,7 +186,7 @@ char* word[NRW + 1] =
 int wsym[NRW + 1] =
 {
 	SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
-	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE
+	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE, SYM_PRINT
 };
 
 /**
@@ -174,7 +195,8 @@ int wsym[NRW + 1] =
 int ssym[NSYM + 1] =
 {
 	SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES, SYM_SLASH,
-	SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON
+	SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON,
+    SYM_LSQUAREBRACKET, SYM_RSQUAREBRACKET, SYM_LBRACKET, SYM_RBRACKET
 };
 
 /**
@@ -182,22 +204,37 @@ int ssym[NSYM + 1] =
  */
 char csym[NSYM + 1] =
 {
-	' ', '+', '-', '*', '/', '(', ')', '=', ',', '.', ';'
+	' ', '+', '-', '*', '/', '(', ')', '=', ',', '.', ';', '[', ']', '{', '}'
 };
 
 /**
  * @brief 虚拟机指令助记符字符串数组
  */
-#define MAXINS   8
+#define MAXINS   15
 char* mnemonic[MAXINS] =
 {
-	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC"
+	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "PRT", "STA", "LDA", "LEA", "STI", "RES", "RET"
 };
+
+/**
+ * @brief 数组信息结构
+ */
+typedef struct _array_info
+{
+	short address;//数组首地址
+	int size;//数组元素个数
+	int dim;//数组维数
+	int dim_size[MAX_DIM + 1];//每一维的大小
+} array_info;
+/*
+ * @brief 数组信息数组，存储 PL/0 编译器的数组信息
+ */
+array_info array_table[TXMAX];
 
 /**
  * @brief 编译表的条目结构
  */
-typedef struct
+typedef struct comtab
 {
 	char name[MAXIDLEN + 1]; /**< 标识符名字 */
 	int  kind; /**< 标识符类型（常量、变量、过程） */
@@ -212,7 +249,8 @@ comtab table[TXMAX];
 /**
  * @brief 符号表的条目结构
  */
-typedef struct
+
+typedef struct mask
 {
 	char  name[MAXIDLEN + 1]; /**< 标识符名字 */
 	int   kind; /**< 标识符类型（常量、变量、过程） */
@@ -220,6 +258,14 @@ typedef struct
 	short address; /**< 标识符地址 */
 } mask;
 
+int current_level, max_level, array_index, array_dim;
+int current_array[MAX_DIM + 1], max_array[MAX_DIM + 1];
+int array_full, before_Lbracket;//judge whether the array is full
+int judge_level[MAX_DIM + 1];//judge whether the dimension is empty
+int bracketlevel[MAX_DIM + 1];//bracket level
+int bl_index;//bracket level index
 FILE* infile;
 
+void countsize(void);
+void initializer(void);
 // EOF PL0.h

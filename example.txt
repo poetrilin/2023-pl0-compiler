@@ -1,5 +1,11 @@
-var i,j;
+var i,j ;
+var a [3];
 begin
   i := -1;
   j := i + 1;
+  a[1] := 1;
+  a[0] := i;
+  i := a[0] + 1;
+  print(i,j);
+  print(a[1],a[0]);
 end.
