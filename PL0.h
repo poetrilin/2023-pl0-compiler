@@ -17,7 +17,7 @@
 enum symtype
 {
     SYM_NULL,       // 空符号
-    SYM_IDENTIFIER, // 标识符
+    SYM_IDENTIFIER, // 标识符id
     SYM_NUMBER,     // 数字
     SYM_PLUS,       // 加号
     SYM_MINUS,      // 减号
@@ -48,7 +48,7 @@ enum symtype
     SYM_PROCEDURE   // 过程声明符号 procedure
 };
 
-// 枚举类型 idtype 定义了标识符的类型，包括常量、变量和过程
+// idtype 定义了标识符的类型，包括常量、变量和过程
 enum idtype
 {
     ID_CONSTANT,   // 常量标识符
@@ -56,7 +56,7 @@ enum idtype
     ID_PROCEDURE   // 过程标识符
 };
 
-// 枚举类型 opcode 定义了指令的操作码
+// opcode 定义了指令的操作码
 enum opcode
 {
     LIT,  // 将常量放入栈顶
@@ -69,7 +69,7 @@ enum opcode
     JPC   // 条件跳转
 };
 
-// 枚举类型 oprcode 定义了运算符的操作码
+// oprcode 定义了运算符的操作码
 enum oprcode
 {
     OPR_RET,  // 返回
@@ -145,9 +145,9 @@ int  cx;         // index of current instruction to be generated.
 int  level = 0;
 int  tx = 0;     // current table index
 
-char line[80];
+char line[80]; //一行"代码"
 
-instruction code[CXMAX];
+instruction code[CXMAX]; // 存放虚拟机代码的数组
 
 /**
  * @brief 保留字字符串数组，存储 PL/0 编译器中的保留字
@@ -186,7 +186,7 @@ char csym[NSYM + 1] =
 };
 
 /**
- * @brief 虚拟机指令助记符字符串数组
+ * @brief 虚拟机指令映射表
  */
 #define MAXINS   8
 char* mnemonic[MAXINS] =
@@ -195,7 +195,7 @@ char* mnemonic[MAXINS] =
 };
 
 /**
- * @brief 编译表的条目结构
+ * @brief 符号表的条目结构
  */
 typedef struct
 {
@@ -204,13 +204,10 @@ typedef struct
 	int  value; /**< 标识符的值 */
 } comtab;
 
-/**
- * @brief 编译表数组，存储 PL/0 编译器的编译表
- */
 comtab table[TXMAX];
 
 /**
- * @brief 符号表的条目结构
+ * @brief 标识符表的条目结构
  */
 typedef struct
 {
