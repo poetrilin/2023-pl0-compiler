@@ -12,6 +12,7 @@
 #include "set.c"
 void array_visit(short arr_index, int dim, symset fsys);//visit array
 //////////////////////////////////////////////////////////////////////
+
 // print error message.
 void error(int n)
 {
@@ -25,9 +26,9 @@ void error(int n)
 	err++;
 } // error
 
-//////////////////////////////////////////////////////////////////////
 // get a character from input file.
 void getch(void){
+	// cc读入的字符数，ll当前行长度，ch当前字符
 	if (cc == ll){  // get character to end of line
 		if (feof(infile)){
 			printf("\nPROGRAM INCOMPLETE\n");
@@ -46,40 +47,50 @@ void getch(void){
 	ch = line[++cc];
 } // getch
 
-//////////////////////////////////////////////////////////////////////
-// gets a symbol from input stream.
+//---------------------------------
+//-------------词法分析
+//---------------------------------
+//从源文件中读出若干有效字符，组成一个 token 串，识别它的类型为保留字/标识
+//符/数字或是其它符号。如果是保留字，把 sym 置成相应的保留字类型，如果是标
+//识符，把 sym 置成 ident 表示是标识符，于此同时，id 变量中存放的即为保留
+//字字符串或标识符名字。如果是数字，把 sym 置为 number,同时 num 变量中存
+//放该数字的值。如果是其它的操作符，则直接把 sym 置成相应类型。经过本过程后
+//ch 变量中存放的是下一个即将被识别的字符
 void getsym(void){
 	int i, k;
 	char a[MAXIDLEN + 1];//save an identifier
 
-	while (ch == ' '||ch == '\t')
-		getch();
+	while (ch == ' '||ch == '\t')getch();  // 删除前导空格
 
-	if (isalpha(ch)){ // symbol is a reserved word or an identifier.
-		k = 0;
+	if (isalpha(ch)){  // 当前token的第一个字符为字母，可能是标识符或保留字
+		k = 0;	// 用于记录token长度
 		do{
 			if (k < MAXIDLEN)
 				a[k++] = ch;
 			getch();
-		}while (isalpha(ch) || isdigit(ch));//get an identifier
-		a[k] = 0;
+		}while (isalpha(ch) || isdigit(ch));
+		a[k] = 0; //读完整个token，添加结束符\0
+
 		strcpy(id, a);
 		word[0] = id;
 		i = NRW;
 		while (strcmp(id, word[i--]));//compare with reserved words
+		//如果能匹配到保留字，i+1即为保留字的类型,否则i=-1表示不是保留字,i.e是ID
 		if (++i)
 			sym = wsym[i]; // symbol is a reserved word
 		else
-			sym = SYM_IDENTIFIER;   // symbol is an identifier
+			sym = SYM_IDENTIFIER;   
 	}
+
 	else if (isdigit(ch)){ // symbol is a number.
 		k = num = 0;
 		sym = SYM_NUMBER;
 		do{
-			num = num * 10 + ch - '0';//get a number
-			k++;
+			num = num * 10 + ch - '0';
+			k++; 
 			getch();
-		}while (isdigit(ch));//get a number
+		}while (isdigit(ch));
+
 		if (k > MAXNUMLEN)
 			error(25);     // The number is too great.
 	}
@@ -108,7 +119,7 @@ void getsym(void){
 			getch();
 		}
 		else if (ch == '>'){
-			sym = SYM_NEQ;     // <>
+			sym = SYM_NEQ;     // <> 即!=
 			getch();
 		}
 		else
@@ -129,8 +140,7 @@ void getsym(void){
 	}
 } // getsym
 
-//////////////////////////////////////////////////////////////////////
-// generates (assembles) an instruction.
+//中间代码生成,将生成的中间代码写入中间代码数组，供后面的解释器运行
 void gen(int x, int y, int z){
 	if (cx > CXMAX){//program too long
 		printf("Fatal Error: Program too long.\n");
@@ -141,8 +151,11 @@ void gen(int x, int y, int z){
 	code[cx++].a = z;
 } // gen
 
-//////////////////////////////////////////////////////////////////////
-// tests if error occurs and skips all symbols that do not belongs to s1 or s2.
+//-------------测试当前单词是否合法
+//---------------------------------
+// 参数：s1:当语法分析进入或退出某一语法单元时当前单词符合应属于的集合
+//      s2:在某一出错状态下，可恢复语法分析正常工作的补充单词集合
+//      n :出错信息编号，当当前符号不属于合法的 s1 集合时发出的出错信息
 void test(symset s1, symset s2, int n){//test if error occurs
 	symset s;
 
@@ -155,25 +168,25 @@ void test(symset s1, symset s2, int n){//test if error occurs
 	}
 } // test
 
-//////////////////////////////////////////////////////////////////////
 int dx;  // data allocation index
 
 // enter object(constant, variable or procedre) into table.
+//-------------符号表
 void enter(int kind){
 	mask* mk;//pointer to mask
 
 	tx++;//table index + 1
 	strcpy(table[tx].name, id);//save an identifier
-	table[tx].kind = kind;//save the kind of object
+	table[tx].kind = kind;    //save the kind of object
 	switch (kind){
-	case ID_CONSTANT://constant
+	case ID_CONSTANT: //constant
 		if (num > MAXADDRESS){
 			error(25); // The number is too great.
 			num = 0;
 		}
 		table[tx].value = num;//save the value of constant
 		break;
-	case ID_VARIABLE://variable
+	case ID_VARIABLE://variable 把l
 		mk = (mask*) &table[tx];//mk points to the table[tx]
 		mk->level = level;
 		mk->address = dx++;
@@ -197,9 +210,10 @@ void enter(int kind){
 
 //////////////////////////////////////////////////////////////////////
 // locates identifier in symbol table.
+// @return : 0:not found, n: index of symbol table entry
 int position(char* id){
 	int i;
-	strcpy(table[0].name, id);
+	strcpy(table[0].name, id); // sentinel
 	i = tx + 1;
 	while (strcmp(table[--i].name, id) != 0);//compare with identifiers in table
 	return i;
@@ -597,7 +611,8 @@ void vardeclaration(void){//variable declaration
 		error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
 } // vardeclaration
 
-//////////////////////////////////////////////////////////////////////
+//-------------输出当前代码块的中间代码
+//---------------------------------
 void listcode(int from, int to){
 	int i;
 	printf("\n");
@@ -607,14 +622,16 @@ void listcode(int from, int to){
 	printf("\n");
 } // listcode
 
-//////////////////////////////////////////////////////////////////////
+//-------------factor处理
+//---------------------------------
+//fsys: 如果出错可用来恢复语法分析的符号集合
 void factor(symset fsys){
 	void expression(symset fsys);//declare expression
 	int i,arr_index;
 	symset set;//declare set
 	
-	test(facbegsys, fsys, 24); // The symbol can not be as the beginning of an expression.
-
+	 test(facbegsys, fsys, 24);     // 开始因子处理前，先检查当前 token 是否在 facbegsys 集合中
+                                   // 如果不是合法的 token，抛 24 号错误，并通过 fsys 集恢复使语法处理可以继续进行
 	if (inset(sym, facbegsys)){
 		if (sym == SYM_IDENTIFIER){
 			if ((i = position(id)) == 0)//if i = 0
@@ -669,7 +686,8 @@ void factor(symset fsys){
 			 factor(fsys);
 			 gen(OPR, 0, OPR_NEG);//generate a OPR instruction
 		}
-		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);//test if error occurs
+		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);  // 一个因子处理完毕，遇到的 token 应在 fsys 集合中
+                                   // 如果不是，抛 23 号错，并找到下一个因子的开始，使语法分析可以继续运行下去
 	} // if
 } // factor
 
@@ -939,13 +957,17 @@ void block(symset fsys){
 	int savedTx;//saved table index
 	symset set1, set;
 
-	dx = 3;//data allocation index
+	dx = 3;
+	// 地址寄存器给出每层局部量当前已分配到的相对位置
+    // 置初始值为 3 的原因是：每一层最开始的位置有三个空间用于存放
+    // 静态链 SL、动态链 DL 和 返回地址 RA
 	block_dx = dx;
 	mk = (mask*) &table[tx];
 	mk->address = cx;
-	gen(JMP, 0, 0);
-	if (level > MAXLEVEL)
-		error(32); // There are too many levels.
+	gen(JMP, 0, 0); // block开始时首先写下一句跳转指令，地址到后面再补
+
+	if (level > MAXLEVEL) error(32); // There are too many levels.
+
 	do{
 		if (sym == SYM_CONST){ // constant declarations
 			getsym();
@@ -1035,15 +1057,16 @@ void block(symset fsys){
 	destroyset(set);
 	gen(OPR, 0, OPR_RET); // return
 	test(fsys, phi, 8); // test for error: Follow the statement is an incorrect symbol.
-	listcode(cx0, cx);//`
+	listcode(cx0, cx);
+
 } // block
 
-//////////////////////////////////////////////////////////////////////
+//-------------通过静态链求出数据区基地址
 int base(int stack[], int currentLevel, int levelDiff){//`
 	int b = currentLevel;
 	
-	while (levelDiff--)//while levelDiff > 0
-		b = stack[b];//b points to the base of the current level
+	while (levelDiff--)   //while levelDiff > 0
+		b = stack[b];    //b points to the base of the current level
 	return b;
 } // base
 
