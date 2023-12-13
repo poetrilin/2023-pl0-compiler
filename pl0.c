@@ -186,7 +186,7 @@ void enter(int kind){
 		}
 		table[tx].value = num;//save the value of constant
 		break;
-	case ID_VARIABLE://variable 把l
+	case ID_VARIABLE://variable
 		mk = (mask*) &table[tx];//mk points to the table[tx]
 		mk->level = level;
 		mk->address = dx++;
@@ -566,7 +566,7 @@ void countsize(void){//calculate the size of the array
 	else error(36);//Missing initializer.
 }
 //////////////////////////////////////////////////////////////////////
-void vardeclaration(void){//variable declaration
+void vardeclaration(void){//variable declaration // Todo: 加入指针变量
 	if (sym == SYM_IDENTIFIER){
 		getsym();
 		if(sym==SYM_LSQUAREBRACKET){
@@ -622,7 +622,7 @@ void listcode(int from, int to){
 	printf("\n");
 } // listcode
 
-//-------------factor处理
+//-------------factor处理 // Todo : 加入指针解引用
 //---------------------------------
 //fsys: 如果出错可用来恢复语法分析的符号集合
 void factor(symset fsys){
@@ -630,7 +630,7 @@ void factor(symset fsys){
 	int i,arr_index;
 	symset set;//declare set
 	
-	 test(facbegsys, fsys, 24);     // 开始因子处理前，先检查当前 token 是否在 facbegsys 集合中
+	test(facbegsys, fsys, 24);     // 开始因子处理前，先检查当前 token 是否在 facbegsys 集合中
                                    // 如果不是合法的 token，抛 24 号错误，并通过 fsys 集恢复使语法处理可以继续进行
 	if (inset(sym, facbegsys)){
 		if (sym == SYM_IDENTIFIER){
@@ -788,6 +788,10 @@ void array_visit(short arr_index, int dim, symset fsys) {
 		array_visit(arr_index, dim + 1, fsys);//visit next dimension 
 	}
 	else if (dim != array_table[arr_index].dim)  error(34);//missing dimensions
+}
+//////////////////////////////////////////////////////////////////////
+void pointer_visit() {
+	// Todo
 }
 //////////////////////////////////////////////////////////////////////
 void statement(symset fsys){
