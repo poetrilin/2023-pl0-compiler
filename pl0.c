@@ -803,7 +803,8 @@ void statement(symset fsys){
 		mask* mk;
 		if (! (i = position(id)))
 			error(11); // Undeclared identifier.
-		else if (table[i].kind != ID_VARIABLE&& table[i].kind != ID_ARRAY){//if the kind of identifier is not ID_VARIABLE
+		else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY && table[i].kind != ID_POINTER){
+			//if the kind of identifier is not ID_VARIABLE or ID_ARRAY or ID_POINTER
 			error(12); // Illegal assignment.
 			i = 0;
 		}
@@ -830,6 +831,10 @@ void statement(symset fsys){
 			getsym();
 			expression(fsys);
 			if(i)gen(STA,0,0);//store the value of expression
+		}
+		else if(table[i].kind == ID_POINTER) {
+			// Todo
+			;
 		}
 	}
 	else if (sym == SYM_CALL){ // procedure call
@@ -912,7 +917,8 @@ void statement(symset fsys){
 				count++;
 				if (! (i = position(id)))
 					error(11); // Undeclared identifier.
-				else if (table[i].kind != ID_VARIABLE&& table[i].kind != ID_ARRAY)//if the kind of identifier is not ID_VARIABLE
+				else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY && table[i].kind != ID_POINTER)
+					//if the kind of identifier is not ID_VARIABLE or ID_ARRAY or ID_POINTER
 					error(29);//Illegal print.
 				else {
 					if(table[i].kind==ID_VARIABLE){
