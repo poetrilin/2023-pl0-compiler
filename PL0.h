@@ -150,8 +150,9 @@ char* err_msg[] =
 /* 35 */    "Missing '['.",
 /* 36 */    "Missing '{'.",
 /* 37 */    "Illegal initialization.",
-/* 38 */    "Missing '}'."
-/* 39 */	"The empty dimension must be the first one."
+/* 38 */    "Missing '}'.",
+/* 39 */	"The empty dimension must be the first one.",
+/* 40 */    "Illegal address operation."
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -238,9 +239,10 @@ array_info array_table[TXMAX];
  */
 typedef struct comtab
 {
-	char name[MAXIDLEN + 1]; /**< 标识符名字 */
-	int  kind; /**< 标识符类型（常量、变量、过程） */
-	int  value; /**< 标识符的值 */
+    char name[MAXIDLEN + 1]; /**< 标识符名字 */
+    int  kind; /**< 标识符类型（常量、变量、过程） */
+    int  value; /**< 标识符的值 */
+    int  depth; /**< 指针的级数 */
 } comtab;
 
 comtab table[TXMAX];
