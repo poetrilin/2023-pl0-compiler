@@ -169,6 +169,7 @@ void test(symset s1, symset s2, int n){//test if error occurs
 } // test
 
 int dx;  // data allocation index
+int depth; // 声明指针变量时它的层数
 
 // enter object(constant, variable or procedre) into table.
 //-------------符号表
@@ -178,6 +179,7 @@ void enter(int kind){
 	tx++;//table index + 1
 	strcpy(table[tx].name, id);//save an identifier
 	table[tx].kind = kind;    //save the kind of object
+	table[tx].depth = depth;  //save the depth of object
 	switch (kind){
 	case ID_CONSTANT: //constant
 		if (num > MAXADDRESS){
@@ -566,7 +568,7 @@ void countsize(void){//calculate the size of the array
 	else error(36);//Missing initializer.
 }
 //////////////////////////////////////////////////////////////////////
-void vardeclaration(void){//variable declaration // Todo: 加入指针变量
+void vardeclaration(void){//variable declaration
 	if (sym == SYM_IDENTIFIER){
 		getsym();
 		if(sym==SYM_LSQUAREBRACKET){
@@ -607,9 +609,31 @@ void vardeclaration(void){//variable declaration // Todo: 加入指针变量
 		}
 		else enter(ID_VARIABLE);//enter a variable
 	}
-	else
-		error(4); // There must be an identifier to follow 'const', 'var', or 'procedure'.
+	else if (sym == SYM_TIMES) { // 指针
+		depth = 0;
+		while (sym == SYM_TIMES) {
+			++depth;
+			getsym();
+		}
+		vardeclaration(); // 有可能是数组
+		depth = 0; // 结束一个指针变量/数组
+	}
+	else 
+		error(4); // There must be an identifier to follow 'const', 'var', a string of '*' or 'procedure'.
 } // vardeclaration
+//////////////////////////////////////////////////////////////////////
+void array_visit(short arr_index, int dim, symset fsys) {
+	getsym();
+	if (sym == SYM_LSQUAREBRACKET) {
+		gen(LIT, 0, array_table[arr_index].dim_size[dim + 1]);
+		gen(OPR, 0, OPR_MUL);//multiply top two
+		getsym();
+		expression(fsys);
+		gen(OPR, 0, OPR_ADD);
+		array_visit(arr_index, dim + 1, fsys);//visit next dimension 
+	}
+	else if (dim != array_table[arr_index].dim)  error(34);//missing dimensions
+}
 
 //-------------输出当前代码块的中间代码
 //---------------------------------
@@ -714,22 +738,41 @@ void term(symset fsys){
 
 //////////////////////////////////////////////////////////////////////
 void expression(symset fsys){
-	int addop;
-	symset set;
+	int i, addop;
+	symset set, set1;
 
 	set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS, SYM_NULL));//set = fsys + {SYM_PLUS, SYM_MINUS}
 	
-	term(set);
-	while (sym == SYM_PLUS || sym == SYM_MINUS){
-		addop = sym;
+	if (sym == SYM_QUOTE) { // 对变量取地址
 		getsym();
+		if (sym == SYM_NUMBER){ // 对数字取地址
+			error(40); // Illegal address operation.
+		} else if (sym == SYM_IDENTIFIER) {
+			mask* mk;
+			if (! (i = position(id)))
+				error(11); // Undeclared identifier.
+			else if (table[i].kind != ID_VARIABLE){
+				//if the kind of identifier is not ID_VARIABLE
+				error(12); // Illegal assignment.
+				i = 0;
+			} else {
+				mk = (mask*) &table[i];
+				gen(LEA, level - mk->level, mk->address);
+				getsym();
+			}
+		}
+	} else {
 		term(set);
-		if (addop == SYM_PLUS)//if addop is +
-			gen(OPR, 0, OPR_ADD);
-		else
-			gen(OPR, 0, OPR_MIN);
-	} // while
-
+		while (sym == SYM_PLUS || sym == SYM_MINUS){
+			addop = sym;
+			getsym();
+			term(set);
+			if (addop == SYM_PLUS)//if addop is +
+				gen(OPR, 0, OPR_ADD);
+			else
+				gen(OPR, 0, OPR_MIN);
+		} // while
+	}
 	destroyset(set);
 } // expression
 
@@ -776,23 +819,7 @@ void condition(symset fsys){
 		} // else
 	} // else
 } // condition
-//////////////////////////////////////////////////////////////////////
-void array_visit(short arr_index, int dim, symset fsys) {
-	getsym();
-	if (sym == SYM_LSQUAREBRACKET) {
-		gen(LIT, 0, array_table[arr_index].dim_size[dim + 1]);
-		gen(OPR, 0, OPR_MUL);//multiply top two
-		getsym();
-		expression(fsys);
-		gen(OPR, 0, OPR_ADD);
-		array_visit(arr_index, dim + 1, fsys);//visit next dimension 
-	}
-	else if (dim != array_table[arr_index].dim)  error(34);//missing dimensions
-}
-//////////////////////////////////////////////////////////////////////
-void pointer_visit() {
-	// Todo
-}
+
 //////////////////////////////////////////////////////////////////////
 void statement(symset fsys){
 	int i, cx1, cx2;
@@ -803,8 +830,8 @@ void statement(symset fsys){
 		mask* mk;
 		if (! (i = position(id)))
 			error(11); // Undeclared identifier.
-		else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY && table[i].kind != ID_POINTER){
-			//if the kind of identifier is not ID_VARIABLE or ID_ARRAY or ID_POINTER
+		else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY){
+			//if the kind of identifier is not ID_VARIABLE or ID_ARRAY
 			error(12); // Illegal assignment.
 			i = 0;
 		}
@@ -831,10 +858,6 @@ void statement(symset fsys){
 			getsym();
 			expression(fsys);
 			if(i)gen(STA,0,0);//store the value of expression
-		}
-		else if(table[i].kind == ID_POINTER) {
-			// Todo
-			;
 		}
 	}
 	else if (sym == SYM_CALL){ // procedure call
@@ -917,8 +940,8 @@ void statement(symset fsys){
 				count++;
 				if (! (i = position(id)))
 					error(11); // Undeclared identifier.
-				else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY && table[i].kind != ID_POINTER)
-					//if the kind of identifier is not ID_VARIABLE or ID_ARRAY or ID_POINTER
+				else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY)
+					//if the kind of identifier is not ID_VARIABLE or ID_ARRAY
 					error(29);//Illegal print.
 				else {
 					if(table[i].kind==ID_VARIABLE){
@@ -1013,6 +1036,7 @@ void block(symset fsys){
 			}
 			while (sym == SYM_IDENTIFIER);//if sym is identifier
 		} // if
+
 		block_dx = dx; //save dx before handling procedure call!
 		while (sym == SYM_PROCEDURE){ // procedure declarations
 			getsym();
