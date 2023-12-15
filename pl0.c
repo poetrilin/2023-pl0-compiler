@@ -635,6 +635,10 @@ void array_visit(short arr_index, int dim, symset fsys) {
 	else if (dim != array_table[arr_index].dim)  error(34);//missing dimensions
 }
 
+void pointer_visit() { // 出现指针运算，递归处理可能出现的多层解引用
+	// todo
+}
+
 //-------------输出当前代码块的中间代码
 //---------------------------------
 void listcode(int from, int to){
@@ -843,7 +847,10 @@ void statement(symset fsys){
 	symset set1, set;
 	int count = 0;
 
-	if (sym == SYM_IDENTIFIER){ // variable assignment
+	if (sym == SYM_TIMES) { // 左值是解引用指针
+		// todo
+	}
+	else if (sym == SYM_IDENTIFIER){ // variable assignment
 		mask* mk;
 		if (! (i = position(id)))
 			error(11); // Undeclared identifier.
