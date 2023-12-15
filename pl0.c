@@ -751,14 +751,31 @@ void expression(symset fsys){
 			mask* mk;
 			if (! (i = position(id)))
 				error(11); // Undeclared identifier.
-			else if (table[i].kind != ID_VARIABLE){
+			else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY) {
 				//if the kind of identifier is not ID_VARIABLE
 				error(12); // Illegal assignment.
 				i = 0;
-			} else {
+			}
+			if(table[i].kind==ID_VARIABLE){
+				mask* mk;
 				mk = (mask*) &table[i];
+				// 取地址，LOD指令改为LEA指令，保留地址信息即可
 				gen(LEA, level - mk->level, mk->address);
 				getsym();
+			}
+			else if(table[i].kind == ID_ARRAY){
+				int arr_index;
+				mask* mk;
+				mk = (mask*) &table[i];
+				array_index = mk->address;
+				mk = (mask*) &table[i];
+				gen(LEA, level - mk->level, array_table[array_index].address);
+				gen(LIT, 0, 0);//initialize the index of array
+				set1=createset(SYM_RSQUAREBRACKET);
+				array_visit(array_index,0,set1);//visit the array
+				gen(OPR,0,OPR_MIN);
+				//取地址，所以最后不用加载地址内的值，保留地址即可
+				//gen(LDA,0,0);//load the address of the array
 			}
 		}
 	} else {
