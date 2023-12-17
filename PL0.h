@@ -3,7 +3,7 @@
 #define NRW        12     // number of reserved words
 #define TXMAX      500    // length of identifier table
 #define MAXNUMLEN  14     // maximum number of digits in numbers
-#define NSYM       14     // maximum number of symbols in array ssym and csym
+#define NSYM       15     // maximum number of symbols in array ssym and csym
 #define MAXIDLEN   10     // length of identifiers
 
 #define MAXADDRESS 32767  // maximum address
@@ -50,7 +50,8 @@ enum symtype
 	SYM_RSQUAREBRACKET, // 右中括号
 	SYM_PRINT,          // print
 	SYM_LBRACKET,       // 左大括号
-	SYM_RBRACKET        // 右大括号
+	SYM_RBRACKET,       // 右大括号
+    SYM_QUOTE       // 引用符号
 };
 
 // idtype 定义了标识符的类型，包括常量、变量和过程
@@ -59,7 +60,8 @@ enum idtype
     ID_CONSTANT,   // 常量标识符
     ID_VARIABLE,   // 变量标识符
     ID_PROCEDURE,  // 过程标识符
-    ID_ARRAY       // 数组标识符
+    ID_ARRAY,      // 数组标识符
+    ID_POINTER     // 指针标识符
 };
 
 // opcode 定义了指令的操作码
@@ -148,8 +150,9 @@ char* err_msg[] =
 /* 35 */    "Missing '['.",
 /* 36 */    "Missing '{'.",
 /* 37 */    "Illegal initialization.",
-/* 38 */    "Missing '}'."
-/* 39 */	"The empty dimension must be the first one."
+/* 38 */    "Missing '}'.",
+/* 39 */	"The empty dimension must be the first one.",
+/* 40 */    "Illegal address operation."
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -196,7 +199,7 @@ int ssym[NSYM + 1] =
 {
 	SYM_NULL, SYM_PLUS, SYM_MINUS, SYM_TIMES, SYM_SLASH,
 	SYM_LPAREN, SYM_RPAREN, SYM_EQU, SYM_COMMA, SYM_PERIOD, SYM_SEMICOLON,
-    SYM_LSQUAREBRACKET, SYM_RSQUAREBRACKET, SYM_LBRACKET, SYM_RBRACKET
+    SYM_LSQUAREBRACKET, SYM_RSQUAREBRACKET, SYM_LBRACKET, SYM_RBRACKET, SYM_QUOTE
 };
 
 /**
@@ -204,7 +207,7 @@ int ssym[NSYM + 1] =
  */
 char csym[NSYM + 1] =
 {
-	' ', '+', '-', '*', '/', '(', ')', '=', ',', '.', ';', '[', ']', '{', '}'
+	' ', '+', '-', '*', '/', '(', ')', '=', ',', '.', ';', '[', ']', '{', '}', '&'
 };
 
 /**
@@ -236,9 +239,10 @@ array_info array_table[TXMAX];
  */
 typedef struct comtab
 {
-	char name[MAXIDLEN + 1]; /**< 标识符名字 */
-	int  kind; /**< 标识符类型（常量、变量、过程） */
-	int  value; /**< 标识符的值 */
+    char name[MAXIDLEN + 1]; /**< 标识符名字 */
+    int  kind; /**< 标识符类型（常量、变量、过程） */
+    int  value; /**< 标识符的值 */
+    int  depth; /**< 指针的级数 */
 } comtab;
 
 comtab table[TXMAX];

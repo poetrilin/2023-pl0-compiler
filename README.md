@@ -5,7 +5,7 @@
 - 2、输出语句print（done）
 - 3、指针的声明，赋值和访问
 - 4、数组元素读写的指针化表示
-- 5、作用域算符：：的实现
+- 5、作用域算符 `::` 的实现
 
 
  
@@ -24,29 +24,28 @@ PL/0语言可以看成PASCAL语言的子集，它的编译程序是一个编译�
 
 ## 文法
 
-Program → Block .
+Program $\to$ Block .
 
- Block → [ConstDecl] [VarDecl][ProcDecl] Stmt
+Block $\to$ { ConstDecl | VarDecl | ProcDecl } Stmt
 
- ConstDecl → **const** ConstDef {, ConstDef} ;
+ConstDecl $\to$ **const** **ident** = **number** {; **ident** = **number**} ;
 
- ConstDef → **ident** = **number**
+VarDecl $\to$ **var** **ident** {, **ident**} ;
 
- VarDecl → **var** **ident** {, **ident**} ;
+ProcDecl $\to$ { **procedure** **ident** ; Block ; }
 
- ProcDecl → **procedure** **ident** ; Block ; {**procedure** **ident** ; Block ;}
+Stmt $\to$ **ident** := Exp | **call** **ident** | **begin** Stmt {; Stmt} end |
+**if** Cond **then** Stmt | **while** Cond **do** Stmt | $\epsilon$
+ 
+Cond $\to$ **odd** Exp | Exp RelOp Exp
 
- Stmt → **ident** := Exp | **call** **ident** | **begin** Stmt {; Stmt} end |
-**if** Cond **then** Stmt | **while** Cond **do** Stmt | ε
- Cond → **odd** Exp | Exp RelOp Exp
+RelOp $\to$ = | <> | < | > | <= | >=
 
- RelOp → = | <> | < | > | <= | >=
+Exp $\to$ Term {+ Term | − Term}
 
- Exp → [+ | − ] Term {+ Term | − Term}
+Term $\to$ Factor {∗ Factor | / Factor}
 
- Term → Factor {∗ Factor | / Factor}
-
- Factor → **ident** | **number** | ( Exp )
+Factor $\to$ **ident** | **number** | -Factor | ( Exp )
 
 其中的标识符 **ident** 是字母开头的字母数字串，**number** 是无符号整数，begin、**call**、const、
 do、end、if、odd、**procedure**、**then**、var、while 是保留字。
@@ -54,37 +53,64 @@ do、end、if、odd、**procedure**、**then**、var、while 是保留字。
 ## ISA
 
 1. LIT (Literal): 将常量加载到栈顶
-
 - 格式: LIT 0, A
 - 功能: 将常量 A 放入栈顶
-2. OPR (Operation): 执行运算或逻辑操作
 
+2. OPR (Operation): 执行运算或逻辑操作
 - 格式: OPR 0, A
 - 功能: 根据操作码 A 执行相应的运算或逻辑操作
-3. LOD (Load): 将变量加载到栈顶
 
+3. LOD (Load): 将变量加载到栈顶
 - 格式: LOD L, A
 - 功能: 将位于静态链 L 层上的偏移地址为 A 的变量加载到栈顶
-4. STO (Store): 将栈顶元素存储到变量
 
+4. STO (Store): 将栈顶元素存储到变量
 - 格式: STO L, A
 - 功能: 将栈顶元素存储到静态链 L 层上的偏移地址为 A 的变量
-5. CAL (Call): 调用过程
 
+5. CAL (Call): 调用过程
 - 格式: CAL L, A
 - 功能: 调用静态链 L 层上的过程，A 为过程入口地址
-6. INT (Increment): 分配内存空间
 
+6. INT (Increment): 分配内存空间
 - 格式: INT 0, A
 - 功能: 数据栈栈顶指针增加a,在栈顶为当前过程分配 A 个内存单元
-7. JMP (Jump): 无条件跳转
 
+7. JMP (Jump): 无条件跳转
 - 格式: JMP 0, A
 - 功能: 无条件跳转到指令地址 A
-8. JPC (Jump Condition): 条件跳转
 
+8. JPC (Jump Condition): 条件跳转
 - 格式: JPC 0, A
 - 功能: 如果栈顶元素为零，则跳转到指令地址 A
+
+9. LEA (Load Effective Address)：将地址加载到栈顶
+- 格式: LEA L, A
+- 功能: 将位于静态链 L 层上的偏移地址 A 加载到栈顶
+
+10. LDA (Load Address)：读取栈顶地址的元素
+- 格式: LDA 0, 0
+- 功能: 将地址为栈顶元素的元素加载到栈顶
+
+11. STA (Store Address)：将栈顶元素存入表中
+- 格式: STA 0, 0
+- 功能: 将栈顶元素加载到以次栈顶元素为偏移地址的变量
+
+12. STI (Store Interupt)：将栈顶元素存入表中
+- 格式: STA 0, 0
+- 功能: 将栈顶元素加载到以次次栈顶元素和次栈顶元素之差为偏移地址的变量
+
+13. RES (Reset)：重置栈顶指针
+- 格式: RES 0, 0
+- 功能: 将旧栈顶指针保存并将栈顶指针移至保存的地址
+
+14. RET (Return)：返回地址
+- 格式: RET 0, 0
+- 功能: 用次栈顶的值重置栈顶指针
+
+15. PRT (Print)：输出
+- 格式: PRT 0, A
+- 功能: 将栈顶的 A 个元素输出并弹出栈
 
 TODO: 可能待添加的操作:
 
