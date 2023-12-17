@@ -60,8 +60,7 @@ enum idtype
     ID_CONSTANT,   // 常量标识符
     ID_VARIABLE,   // 变量标识符
     ID_PROCEDURE,  // 过程标识符
-    ID_ARRAY,      // 数组标识符
-    ID_POINTER     // 指针标识符
+    ID_ARRAY       // 数组标识符
 };
 
 // opcode 定义了指令的操作码

@@ -14,8 +14,7 @@ void array_visit(short arr_index, int dim, symset fsys);//visit array
 //////////////////////////////////////////////////////////////////////
 
 // print error message.
-void error(int n)
-{
+void error(int n){
 	int i;
 
 	printf("      ");
