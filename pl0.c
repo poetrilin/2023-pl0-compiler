@@ -1105,7 +1105,7 @@ void block(symset fsys){
 		destroyset(set);
 	}  while (inset(sym, declbegsys));
 
-	code[mk->address].a = 1;
+	code[mk->address].a = cx;
 	mk->address = cx;
 	cx0 = cx;
 	gen(INT, 0, block_dx);
