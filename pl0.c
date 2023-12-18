@@ -242,7 +242,7 @@ int domain_search(int domain_index){
 		getsym();
 		int index;
 		if (sym == SYM_IDENTIFIER){
-			if ((i = position(id)) == 0)//if i = 0
+			if ((i = domain_position(id,domain_index)) == 0)//if i = 0
 				error(11); // Undeclared identifier.
 			else if(table[i].kind == ID_VARIABLE)		
 				index = domain_position(id,domain_index);
@@ -738,6 +738,13 @@ void factor(symset fsys){
 				} // switch
 			}
 		}
+		else if(sym == SYM_DOMAIN){
+						mask* mk;
+						int idx = domain_search(i);//
+						mk = (mask*) &table[idx];
+						gen(LOD, level - mk->level, mk->address);
+						getsym();
+			}
 		else if (sym == SYM_NUMBER){
 			if (num > MAXADDRESS){
 				error(25); // The number is too great.
@@ -762,7 +769,6 @@ void factor(symset fsys){
 			 gen(OPR, 0, OPR_NEG);//generate a OPR instruction
 		}
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);  // 一个因子处理完毕，遇到的 token 应在 fsys 集合中
-                                   // 如果不是，抛 23 号错，并找到下一个因子的开始，使语法分析可以继续运行下去
 	} // if
 } // factor
 
@@ -1364,7 +1370,7 @@ int main (){
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
 	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
-	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
+	facbegsys = createset(SYM_DOMAIN ,SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables
 	cur_domain = 0;
