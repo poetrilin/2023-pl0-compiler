@@ -244,15 +244,15 @@ int domain_search(int domain_index){
 		if (sym == SYM_IDENTIFIER){
 			if ((i = position(id)) == 0)//if i = 0
 				error(11); // Undeclared identifier.
-		else if(table[i].kind == ID_VARIABLE)		
-			index = domain_position(id,domain_index);
-		}
-		else if(table[i].kind == ID_PROCEDURE){
-			getsym();
-			if(sym == SYM_DOMAIN){
-				index = domain_search(i);
+			else if(table[i].kind == ID_VARIABLE)		
+				index = domain_position(id,domain_index);
+			else if(table[i].kind == ID_PROCEDURE){
+				getsym();
+				if(sym == SYM_DOMAIN){
+					index = domain_search(i);
+				}
+				else error(21); // Procedure identifier can not be in an expression.
 			}
-			else error(21); // Procedure identifier can not be in an expression.
 		}
 		else error(4);// There must be an identifier to follow 'const', 'var', or 'procedure'.
 		return index;
@@ -1050,6 +1050,16 @@ void statement(symset fsys){
 					else if(sym==SYM_RPAREN)break;
 					else error(28);
 				}
+			}
+			else if(sym == SYM_DOMAIN){
+				int idx = domain_search(0);
+				mask* mk;
+				mk = (mask*) &table[idx];
+				gen(LOD, level - mk->level, mk->address);	
+				getsym();
+				if(sym==SYM_COMMA)continue;
+					else if(sym==SYM_RPAREN)break;
+					else error(28);
 			}
 			else {
 				if(sym==SYM_NUMBER)

@@ -155,3 +155,9 @@ do、end、if、odd、**procedure**、**then**、var、while 是保留字。
 
 - 地址（Address）： 存储标识符在运行时栈或内存中的地址。
 
+### 作用域实现
+
+对table中每一项添加一个domain属性表示最邻近的作用域,全局变量`cur_domain`表示程序运行当前所在域 (对应在table里的index)，比如 `p2::p1::p0::a`, `cur_domain = position(p0)`. 
+
+词法分析和语法分析部分,每次进入一个新的域,就将`cur_domain`更新为当前域的index,并将该域的index作为domain属性赋给该域内的所有标识符.
+cur_domain类似于其它变量进行回溯处理即可。
