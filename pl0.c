@@ -1326,7 +1326,7 @@ int main (){
 		interpret();
 	else
 		printf("There are %d error(s) in PL/0 program.\n", err);
-	listcode(0, cx);
+	//listcode(0, cx);
 
 	return 0;
 } // main
