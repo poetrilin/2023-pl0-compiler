@@ -67,7 +67,8 @@ do、end、if、odd、**procedure**、**then**、var、while 是保留字。
 4. STO (Store): 将栈顶元素存储到变量
 - 格式: STO L, A
 - 功能: 将栈顶元素存储到静态链 L 层上的偏移地址为 A 的变量
-
+  L可为层次差,A为mk->addr= 中间代码的index
+  
 5. CAL (Call): 调用过程
 - 格式: CAL L, A
 - 功能: 调用静态链 L 层上的过程，A 为过程入口地址
@@ -112,11 +113,6 @@ do、end、if、odd、**procedure**、**then**、var、while 是保留字。
 - 格式: PRT 0, A
 - 功能: 将栈顶的 A 个元素输出并弹出栈
 
-TODO: 可能待添加的操作:
-
-RED L ，a 读数据并存入变量（相对地址为a，层次差为L）
-
-WRT 0 ，0 将栈顶内容输出
 
 **代码的具体形式：**
 

@@ -11,6 +11,7 @@
 #include "PL0.h"
 #include "set.c"
 void array_visit(short arr_index, int dim, symset fsys);//visit array
+void expression(symset fsys);//
 //////////////////////////////////////////////////////////////////////
 
 // print error message.
@@ -657,8 +658,8 @@ void factor(symset fsys){
 	int i,arr_index;
 	symset set;//declare set
 	
-	test(facbegsys, fsys, 24);     // 开始因子处理前，先检查当前 token 是否在 facbegsys 集合中
-                                   // 如果不是合法的 token，抛 24 号错误，并通过 fsys 集恢复使语法处理可以继续进行
+	test(facbegsys, fsys, 24);   
+                                  
 	if (inset(sym, facbegsys)){
 		if (sym == SYM_IDENTIFIER){
 			if ((i = position(id)) == 0)//if i = 0
@@ -1056,11 +1057,11 @@ void block(symset fsys){
 					getsym();
 				else
 					error(5); // Missing ',' or ';'.
-			}
-			while (sym == SYM_IDENTIFIER);//if sym is identifier
+			}while (sym == SYM_IDENTIFIER);//if sym is identifier
 		} // if
 
 		block_dx = dx; //save dx before handling procedure call!
+		
 		while (sym == SYM_PROCEDURE){ // procedure declarations
 			getsym();
 			if (sym == SYM_IDENTIFIER){
@@ -1076,7 +1077,7 @@ void block(symset fsys){
 				error(5); // Missing ',' or ';'.
 
 			level++;
-			savedTx = tx;
+			savedTx = tx; //保存table index便于回溯
 			set1 = createset(SYM_SEMICOLON, SYM_NULL);
 			set = uniteset(set1, fsys);
 			block(set);
@@ -1102,8 +1103,7 @@ void block(symset fsys){
 		//test(set, declbegsys, 7);
 		destroyset(set1);
 		destroyset(set);
-	}
-	while (inset(sym, declbegsys));
+	}  while (inset(sym, declbegsys));
 
 	code[mk->address].a = 1;
 	mk->address = cx;
@@ -1269,8 +1269,7 @@ void interpret(){
 			printf("\n");
 			break;
 		} // switch
-	}
-	while (pc);
+	}while (pc);
 	printf("End executing PL/0 program.\n");
 } // interpret
 
@@ -1320,7 +1319,7 @@ int main (){
 	if (err == 0){//if there is no error
 		hbin = fopen("hbin.txt", "w");
 		for (i = 0; i < cx; i++)
-			fwrite(&code[i], sizeof(instruction), 1, hbin);
+			fprintf(hbin, "%d %s %d %d\n", i, mnemonic[code[i].f], code[i].l, code[i].a);
 		fclose(hbin);
 	}
 	if (err == 0)

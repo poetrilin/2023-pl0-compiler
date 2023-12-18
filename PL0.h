@@ -33,7 +33,7 @@ enum symtype
     SYM_LPAREN,     // 左括号
     SYM_RPAREN,     // 右括号
     SYM_COMMA,      // 逗号
-    SYM_SEMICOLON,  // 分号
+    SYM_SEMICOLON,  // 分号,17
     SYM_PERIOD,     // 句号
     SYM_BECOMES,    // 赋值符号 :=
     SYM_BEGIN,      // 开始符号 begin
@@ -44,14 +44,15 @@ enum symtype
     SYM_DO,         // 循环语句中的 "do"
     SYM_CALL,       // 过程调用符号 call
     SYM_CONST,      // 常量声明符号 const
-    SYM_VAR,        // 变量声明符号 var
+    SYM_VAR,        // 变量声明符号 var ,28
     SYM_PROCEDURE,  // 过程声明符号 procedure
     SYM_LSQUAREBRACKET, // 左中括号
 	SYM_RSQUAREBRACKET, // 右中括号
 	SYM_PRINT,          // print
 	SYM_LBRACKET,       // 左大括号
 	SYM_RBRACKET,       // 右大括号
-    SYM_QUOTE       // 引用符号
+    SYM_QUOTE,       // 引用符号
+    SYM_DOMAIN       // 作用域
 };
 
 // idtype 定义了标识符的类型，包括常量、变量和过程
