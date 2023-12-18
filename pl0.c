@@ -231,20 +231,21 @@ int domain_position(char* id, int tar_domain){
 	int i;
 	strcpy(table[0].name, id); // sentinel
 	i = tx + 1;
-	while ((strcmp(table[i].name, id) != 0)||(table[i].domain!=tar_domain)) i--;
+	while ((strcmp(table[i].name, id) != 0)||(table[i].domain != tar_domain)) i--;
 	return i;
 }
 
-int domain_search(int i){
-	// @paras: i: 表示在tabel[i]下domain下,  default =0 代表main域
+int domain_search(int domain_index){
+	// @paras: domain_index: table[domain_index]下搜索, default =0 代表main域
 	// @return : 返回该"domain"表达式所在table 的index
+		int i;
 		getsym();
 		int index;
 		if (sym == SYM_IDENTIFIER){
 			if ((i = position(id)) == 0)//if i = 0
 				error(11); // Undeclared identifier.
 		else if(table[i].kind == ID_VARIABLE)		
-			index = domain_position(id,i);
+			index = domain_position(id,domain_index);
 		}
 		else if(table[i].kind == ID_PROCEDURE){
 			getsym();
@@ -1008,10 +1009,10 @@ void statement(symset fsys){
 				count++;
 				if (! (i = position(id)))
 					error(11); // Undeclared identifier.
-				else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY)
-					//if the kind of identifier is not ID_VARIABLE or ID_ARRAY
+				else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY
+							&&table[i].kind != ID_CONSTANT&&table[i].kind != ID_PROCEDURE)
 					error(29);//Illegal print.
-				else {
+				else { // 
 					if(table[i].kind==ID_VARIABLE){
 						mask* mk;
 						mk = (mask*) &table[i];
@@ -1020,6 +1021,16 @@ void statement(symset fsys){
 					}
 					else if(table[i].kind == ID_CONSTANT){
 						gen(LIT, 0, table[i].value);
+						getsym();
+					}
+					else if(table[i].kind == ID_PROCEDURE){
+						getsym();
+						if(sym != SYM_DOMAIN) error(21);
+
+						int idx = domain_search(i);
+						mask* mk;
+						mk = (mask*) &table[idx];
+						gen(LOD, level - mk->level, mk->address);
 						getsym();
 					}
 					else if(table[i].kind == ID_ARRAY){
