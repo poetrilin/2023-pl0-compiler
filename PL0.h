@@ -72,7 +72,7 @@ enum opcode
     LOD,  // 将变量放入栈顶
     STO,  // 将栈顶内容存入变量
     CAL,  // 调用过程
-    INT,  // 初始化栈顶指针
+    INT,  // 分配空间
     JMP,  // 无条件跳转
     JPC,  // 条件跳转
     PRT,  // 打印
@@ -170,7 +170,11 @@ int  tx = 0;     // current table index
 int  arr_tx = 0;  // current array table index
 struct _array_info* last_arr; //pointer to last array information read
 char line[80];
-
+int dx;  // data allocation index 在该block中的相对位置?
+int depth; // 声明指针变量时它的层数
+int cur_domain;   //当前所在域 (对应在table里的index)
+                  //比如 p2::p1::p0::a, cur_domain = position(p0))
+                    
 instruction code[CXMAX]; // 存放虚拟机代码的数组
 
 /**
@@ -243,6 +247,7 @@ typedef struct comtab
     int  kind; /**< 标识符类型（常量、变量、过程） */
     int  value; /**< 标识符的值 */
     int  depth; /**< 指针的级数 */
+    int  domain; //当前作用域
 } comtab;
 
 comtab table[TXMAX];

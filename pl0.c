@@ -100,7 +100,11 @@ void getsym(void){
 			sym = SYM_BECOMES; // :=
 			getch();
 		}
-		else
+		else if(ch == ':'){
+			sym = SYM_DOMAIN;// ::
+				getch();
+		}
+		else 
 			sym = SYM_NULL;// :       
 	}
 	else if (ch == '>'){ // symbol is either > or >=
@@ -140,6 +144,7 @@ void getsym(void){
 	}
 } // getsym
 
+
 //中间代码生成,将生成的中间代码写入中间代码数组，供后面的解释器运行
 void gen(int x, int y, int z){
 	if (cx > CXMAX){//program too long
@@ -168,8 +173,7 @@ void test(symset s1, symset s2, int n){//test if error occurs
 	}
 } // test
 
-int dx;  // data allocation index
-int depth; // 声明指针变量时它的层数
+
 
 // enter object(constant, variable or procedre) into table.
 //-------------符号表
@@ -180,6 +184,8 @@ void enter(int kind){
 	strcpy(table[tx].name, id);//save an identifier
 	table[tx].kind = kind;    //save the kind of object
 	table[tx].depth = depth;  //save the depth of object
+	table[tx].domain = cur_domain; //save the domain of object
+
 	switch (kind){
 	case ID_CONSTANT: //constant
 		if (num > MAXADDRESS){
@@ -220,6 +226,36 @@ int position(char* id){
 	while (strcmp(table[--i].name, id) != 0);//compare with identifiers in table
 	return i;
 } // position
+
+int domain_position(char* id, int tar_domain){
+	int i;
+	strcpy(table[0].name, id); // sentinel
+	i = tx + 1;
+	while ((strcmp(table[i].name, id) != 0)||(table[i].domain!=tar_domain)) i--;
+	return i;
+}
+
+int domain_search(int i){
+	// @paras: i: 表示在tabel[i]下domain下,  default =0 代表main域
+	// @return : 返回该"domain"表达式所在table 的index
+		getsym();
+		int index;
+		if (sym == SYM_IDENTIFIER){
+			if ((i = position(id)) == 0)//if i = 0
+				error(11); // Undeclared identifier.
+		else if(table[i].kind == ID_VARIABLE)		
+			index = domain_position(id,i);
+		}
+		else if(table[i].kind == ID_PROCEDURE){
+			getsym();
+			if(sym == SYM_DOMAIN){
+				index = domain_search(i);
+			}
+			else error(21); // Procedure identifier can not be in an expression.
+		}
+		else error(4);// There must be an identifier to follow 'const', 'var', or 'procedure'.
+		return index;
+}
 
 //////////////////////////////////////////////////////////////////////
 void constdeclaration(){
@@ -677,7 +713,15 @@ void factor(symset fsys){
 					getsym();
 					break;
 				case ID_PROCEDURE:
-					error(21); // Procedure identifier can not be in an expression.
+					getsym();
+					if(sym == SYM_DOMAIN){
+						int idx = domain_search(i);//
+						mk = (mask*) &table[idx];
+						gen(LOD, level - mk->level, mk->address);
+						getsym();
+					break;
+					}
+					else error(21); // Procedure identifier can not be in an expression.
 					break;
 				case ID_ARRAY:
 					mk = (mask*) &table[i];
@@ -1012,7 +1056,7 @@ void statement(symset fsys){
 void block(symset fsys){
 	int cx0; // initial code index
 	mask* mk;
-	int block_dx;//save dx before handling procedure call!
+	
 	int savedTx;//saved table index
 	symset set1, set;
 
@@ -1020,8 +1064,10 @@ void block(symset fsys){
 	// 地址寄存器给出每层局部量当前已分配到的相对位置
     // 置初始值为 3 的原因是：每一层最开始的位置有三个空间用于存放
     // 静态链 SL、动态链 DL 和 返回地址 RA
-	block_dx = dx;
-	mk = (mask*) &table[tx];
+	int block_dx = dx; 
+	int block_domain = cur_domain;
+
+	mk = (mask*) &table[tx]; 
 	mk->address = cx;
 	gen(JMP, 0, 0); // block开始时首先写下一句跳转指令，地址到后面再补
 
@@ -1066,6 +1112,7 @@ void block(symset fsys){
 			getsym();
 			if (sym == SYM_IDENTIFIER){
 				enter(ID_PROCEDURE);
+				cur_domain = position(id);
 				getsym();
 			}
 			else
@@ -1080,11 +1127,13 @@ void block(symset fsys){
 			savedTx = tx; //保存table index便于回溯
 			set1 = createset(SYM_SEMICOLON, SYM_NULL);
 			set = uniteset(set1, fsys);
+		
 			block(set);
 			destroyset(set1);
 			destroyset(set);
 			tx = savedTx;
 			level--;
+			cur_domain = block_domain;
 
 			if (sym == SYM_SEMICOLON){
 				getsym();
@@ -1098,6 +1147,7 @@ void block(symset fsys){
 				error(5); // Missing ',' or ';'.
 		} // while
 		dx = block_dx; //restore dx after handling procedure call!
+
 		set1 = createset(SYM_IDENTIFIER, SYM_NULL);
 		set = uniteset(statbegsys, set1);//set = statbegsys + {SYM_IDENTIFIER}
 		//test(set, declbegsys, 7);
@@ -1105,7 +1155,7 @@ void block(symset fsys){
 		destroyset(set);
 	}  while (inset(sym, declbegsys));
 
-	code[mk->address].a = cx;
+	code[mk->address].a = cx;  //
 	mk->address = cx;
 	cx0 = cx;
 	gen(INT, 0, block_dx);
@@ -1141,7 +1191,7 @@ void interpret(){
 	printf("Begin executing PL/0 program.\n");
 
 	pc = 0;
-	b = 1;
+	b = 1; 
 	top = 3;
 	stack[1] = stack[2] = stack[3] = 0;
 	do{
@@ -1240,7 +1290,7 @@ void interpret(){
 			b = top + 1;
 			pc = i.a;//pc points to the beginning address of the called procedure
 			break;
-		case INT://initialize
+		case INT:
 			top += i.a;//allocate i.a space for the new block
 			break;
 		case RES:
@@ -1296,9 +1346,9 @@ int main (){
 	facbegsys = createset(SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables
+	cur_domain = 0;
 	ch = ' ';
 	kk = MAXIDLEN;
-
 	getsym();
 
 	set1 = createset(SYM_PERIOD, SYM_NULL);
