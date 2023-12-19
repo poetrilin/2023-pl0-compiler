@@ -1058,6 +1058,7 @@ void statement(symset fsys){
 				}
 			}
 			else if(sym == SYM_DOMAIN){
+				count++;
 				int idx = domain_search(0);
 				mask* mk;
 				mk = (mask*) &table[idx];
