@@ -11,7 +11,6 @@
 #include "PL0.h"
 #include "set.c"
 void array_visit(short arr_index, int dim, symset fsys);//visit array
-void expression(symset fsys);//
 //////////////////////////////////////////////////////////////////////
 
 // print error message.
@@ -933,8 +932,9 @@ void statement(symset fsys){
 	symset set1, set;
 	int count = 0;
 
-	if (sym == SYM_TIMES) { // 左值是解引用指针
-		// todo
+	if (sym == SYM_TIMES) { // 解引用，可能有数组的指针形式
+		mask* mk;
+		
 	}
 	else if (sym == SYM_IDENTIFIER){ // variable assignment
 		mask* mk;
