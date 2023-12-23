@@ -11,6 +11,7 @@
 #include "PL0.h"
 #include "set.c"
 void array_visit(short arr_index, int dim, symset fsys);//visit array
+void expression(symset fsys);
 //////////////////////////////////////////////////////////////////////
 
 // print error message.
@@ -164,6 +165,7 @@ void test(symset s1, symset s2, int n){//test if error occurs
 	symset s;
 
 	if (! inset(sym, s1)){//if sym is not in s1
+		printf("======%d======\n", sym);
 		error(n);
 		s = uniteset(s1, s2);//s = s1 + s2
 		while(! inset(sym, s))//skip all symbols that do not belongs to s
@@ -652,15 +654,17 @@ void vardeclaration(void){//variable declaration
 			++depth;
 			getsym();
 		} while (sym == SYM_TIMES);
-		vardeclaration(); // 有可能是数组
+		vardeclaration();
 		depth = 0; // 结束一个指针变量/数组
 	}
 	else 
 		error(4); // There must be an identifier to follow 'const', 'var', a string of '*' or 'procedure'.
 } // vardeclaration
 //////////////////////////////////////////////////////////////////////
+int pass = 0;
 void array_visit(short arr_index, int dim, symset fsys) {
-	getsym();
+	if (!pass) getsym();
+	else pass = 0;
 	if (sym == SYM_LSQUAREBRACKET) {
 		gen(LIT, 0, array_table[arr_index].dim_size[dim + 1]);
 		gen(OPR, 0, OPR_MUL);//multiply top two
@@ -669,39 +673,108 @@ void array_visit(short arr_index, int dim, symset fsys) {
 		gen(OPR, 0, OPR_ADD);
 		array_visit(arr_index, dim + 1, fsys);//visit next dimension 
 	}
-	else if (dim != array_table[arr_index].dim)  error(34);//missing dimensions
+	else if (dim != array_table[arr_index].dim) error(34);//missing dimensions
 }
 
-int pointer_visit(int cannotID_VARIABLE, symset fsys) { // 出现指针运算，递归处理可能出现的多层解引用
+void quote_visit() {
+	int i;
 	getsym();
-	if (sym == SYM_TIMES) {
-		getsym();
-		if (sym == SYM_TIMES || sym == SYM_IDENTIFIER) {
-			int dim = pointer_visit(cannotID_VARIABLE, fsys);
+	if (sym == SYM_NUMBER){ // 对数字取地址
+		error(40); // Illegal address operation.
+	} else if (sym == SYM_IDENTIFIER) {
+		mask* mk;
+		if (! (i = position(id)))
+			error(11); // Undeclared identifier.
+		else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY) {
+			//if the kind of identifier is not ID_VARIABLE
+			error(12); // Illegal assignment.
+			i = 0;
+		}
+		if(table[i].kind==ID_VARIABLE){
+			mask* mk;
+			mk = (mask*) &table[i];
+			// 取地址，LOD指令改为LEA指令，保留地址信息即可
+			gen(LEA, level - mk->level, mk->address);
+			getsym();
+		}
+		else if(table[i].kind == ID_ARRAY){
+			int arr_index;
+			mask* mk;
+			mk = (mask*) &table[i];
+			array_index = mk->address;
+			mk = (mask*) &table[i];
+			gen(LEA, level - mk->level, array_table[array_index].address);
+			gen(LIT, 0, 0);//initialize the index of array
+			symset set1=createset(SYM_RSQUAREBRACKET);
+			array_visit(array_index,0,set1);//visit the array
+			gen(OPR,0,OPR_MIN);
+			//取地址，所以最后不用加载地址内的值，保留地址即可
+			//gen(LDA,0,0);//load the address of the array
+		}
+	}
+}
+
+int if_paren;
+short pointer_arr_index;
+int pointer_visit(symset fsys) { // 出现指针运算，递归处理可能出现的多层解引用
+	if (sym == SYM_TIMES) { // P -> *P | *(P + num) | *(P)
+		getsym(); // pass *
+		if (sym == SYM_TIMES || sym == SYM_IDENTIFIER) { // P -> *P
+			int dim = pointer_visit(fsys);
 			gen(LDA, 0, 0);
-			getsym();
 			return dim + 1;
-		} else if (sym == SYM_LPAREN) {
-			getsym();
-			int dim = pointer_visit(cannotID_VARIABLE, fsys);
+		} else if (sym == SYM_LPAREN) { // P -> *(P + num) | *(P)
+			if_paren = 1;
+			getsym(); // pass (
+			int dim = pointer_visit(fsys);
+			gen(LIT, 0, array_table[pointer_arr_index].dim_size[dim + 1]);
+			gen(OPR, 0, OPR_MUL);//multiply top two
 			if (sym == SYM_PLUS) {
 				getsym();
-				if (sym == SYM_NUMBER) gen(LIT, 0, num);
-				else error(41);
-			} else error(42);
-			getsym();
+				if (sym == SYM_NUMBER) {
+					gen(LIT, 0, num);
+					getsym();
+				}
+				else error(41); // Point offset not a number.
+				gen(OPR, 0, OPR_ADD);
+			}
 			if (sym == SYM_RPAREN) getsym();
-			else error(22);
-		}
-	} else if (sym == SYM_IDENTIFIER) {
+			else error(22); // Missing ')'.
+			return dim + 1;
+		} else error(44);
+	} else if (sym == SYM_IDENTIFIER) { // P -> indent
 		int i;
 		if ((i = position(id)) == 0)//if i = 0
 			error(11); // Undeclared identifier.
 		else {
+			mask* mk;
 			if (table[i].kind == ID_VARIABLE) {
-
+				if (if_paren) error(44);
+				mk = (mask*) &table[i];
+				gen(LEA, level - mk->level, mk->address);
+				getsym();
+				return 0;
 			} else if (table[i].kind == ID_ARRAY) {
-				
+				getsym();
+				if (sym != SYM_LSQUAREBRACKET) { // 形如 ***arr_name
+					mk = (mask*) &table[i];
+					pointer_arr_index = mk->address;
+					gen(LEA, level - mk->level,array_table[pointer_arr_index].address);
+					gen(LIT, 0, 0);//initialize the index of array
+					return 0;
+				} else {
+					mk = (mask*) &table[i];
+					int arr_index = mk->address;
+					mk = (mask*) &table[i];
+					gen(LEA, level - mk->level,array_table[arr_index].address);
+					gen(LIT, 0, 0);//initialize the index of array
+					symset set = createset(SYM_RSQUAREBRACKET);
+					pass = 1; // 少读一个 [，因为之前读过了
+					array_visit(arr_index,0,set);//visit the array
+					gen(OPR,0,OPR_MIN);
+					//gen(LDA,0,0);//load the address of the array
+					return 0;
+				}
 			}
 		}
 	}
@@ -729,9 +802,16 @@ void factor(symset fsys){
                                   
 	if (inset(sym, facbegsys)){
 		if (sym == SYM_TIMES) {// 右值是解引用指针
-			pointer_visit(0, fsys); // todo
+			if_paren = 0;
+			pointer_arr_index = -1;
+			pointer_visit(fsys);
+			if (pointer_arr_index != -1) {
+				gen(OPR,0,OPR_MIN);
+				pointer_arr_index = -1;
+			}
+			gen(LDA, 0, 0);
 		}
-		if (sym == SYM_IDENTIFIER){
+		else if (sym == SYM_IDENTIFIER){
 			if ((i = position(id)) == 0)//if i = 0
 				error(11); // Undeclared identifier.
 			else{
@@ -832,40 +912,7 @@ void expression(symset fsys){
 	set = uniteset(fsys, createset(SYM_PLUS, SYM_MINUS, SYM_NULL));//set = fsys + {SYM_PLUS, SYM_MINUS}
 	
 	if (sym == SYM_QUOTE) { // 对变量取地址
-		getsym();
-		if (sym == SYM_NUMBER){ // 对数字取地址
-			error(40); // Illegal address operation.
-		} else if (sym == SYM_IDENTIFIER) {
-			mask* mk;
-			if (! (i = position(id)))
-				error(11); // Undeclared identifier.
-			else if (table[i].kind != ID_VARIABLE && table[i].kind != ID_ARRAY) {
-				//if the kind of identifier is not ID_VARIABLE
-				error(12); // Illegal assignment.
-				i = 0;
-			}
-			if(table[i].kind==ID_VARIABLE){
-				mask* mk;
-				mk = (mask*) &table[i];
-				// 取地址，LOD指令改为LEA指令，保留地址信息即可
-				gen(LEA, level - mk->level, mk->address);
-				getsym();
-			}
-			else if(table[i].kind == ID_ARRAY){
-				int arr_index;
-				mask* mk;
-				mk = (mask*) &table[i];
-				array_index = mk->address;
-				mk = (mask*) &table[i];
-				gen(LEA, level - mk->level, array_table[array_index].address);
-				gen(LIT, 0, 0);//initialize the index of array
-				set1=createset(SYM_RSQUAREBRACKET);
-				array_visit(array_index,0,set1);//visit the array
-				gen(OPR,0,OPR_MIN);
-				//取地址，所以最后不用加载地址内的值，保留地址即可
-				//gen(LDA,0,0);//load the address of the array
-			}
-		}
+		quote_visit();
 	}
 	else {
 		term(set);
@@ -933,8 +980,14 @@ void statement(symset fsys){
 	int count = 0;
 
 	if (sym == SYM_TIMES) { // 解引用，可能有数组的指针形式
-		mask* mk;
-		
+		if_paren = 0;
+		pointer_visit(fsys);
+		if (sym == SYM_BECOMES)//if sym is :=
+			getsym();
+		else
+			error(13); // ':=' expected.
+		expression(fsys);
+		gen(STA, 0, 0);
 	}
 	else if (sym == SYM_IDENTIFIER){ // variable assignment
 		mask* mk;
@@ -1046,6 +1099,27 @@ void statement(symset fsys){
 		while (1){
 			getsym();
 			if(sym==SYM_RPAREN)break;
+			if (sym == SYM_QUOTE){
+				count++;
+				quote_visit();
+				if(sym==SYM_COMMA)continue;
+				else if(sym==SYM_RPAREN)break;
+				else error(28);
+			}
+			else if (sym == SYM_TIMES){
+				count++;
+				if_paren = 0;
+				pointer_arr_index = -1;
+				pointer_visit(fsys);
+				if (pointer_arr_index != -1) {
+					gen(OPR,0,OPR_MIN);
+					pointer_arr_index = -1;
+				}
+				gen(LDA, 0, 0);
+				if(sym==SYM_COMMA)continue;
+				else if(sym==SYM_RPAREN)break;
+				else error(28);
+			}
 			else if(sym==SYM_IDENTIFIER){
 				count++;
 				if (! (i = position(id)))
@@ -1406,7 +1480,7 @@ int main (){
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
 	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
-	facbegsys = createset(SYM_DOMAIN ,SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
+	facbegsys = createset(SYM_DOMAIN , SYM_TIMES, SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables
 	cur_domain = 0;
