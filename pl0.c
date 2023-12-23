@@ -1291,10 +1291,10 @@ void interpret(){
 			} // switch
 			break;
 		case LEA:
-			stack[++top] = base(stack, b, i.l) + i.a;
+			stack[++top] = base(stack, b, i.l) + i.a;//load the address of the array
 			break;
 		case LDA:
-			stack[top] = stack[stack[top]];
+			stack[top] = stack[stack[top]];//load the value of the array
 			break;
 		case LOD://load
 			stack[++top] = stack[base(stack, b, i.l) + i.a];//load a value to the top of stack

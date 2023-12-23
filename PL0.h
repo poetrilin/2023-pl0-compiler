@@ -12,7 +12,7 @@
 
 #define MAXSYM     30     // maximum number of symbols  
 
-#define STACKSIZE  1000   // maximum storage
+#define STACKSIZE  80000   // maximum storage
 #define MAX_DIM    100    // maximum dimensions of an array
 enum symtype
 {

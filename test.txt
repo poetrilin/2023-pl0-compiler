@@ -1,12 +1,13 @@
 var i,j,m,k[3][4][24];
+var a[20][20][20];
 begin
 i := 2;
 j := 3;
 m := 7;
 k[i][j][1+i*j] := 999;
-
+a[0][0][0] :=99;
 
 print(j,i,m);
-print();
 print(k[i][j][m]);
+print(a[1][2][0]);
 end.
