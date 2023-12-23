@@ -152,7 +152,9 @@ char* err_msg[] =
 /* 37 */    "Illegal initialization.",
 /* 38 */    "Missing '}'.",
 /* 39 */	"The empty dimension must be the first one.",
-/* 40 */    "Illegal address operation."
+/* 40 */    "Illegal address operation.",
+/* 41 */    "Point offset not a number.",
+/* 42 */    "'+' expected."
 };
 
 //////////////////////////////////////////////////////////////////////

@@ -649,10 +649,10 @@ void vardeclaration(void){//variable declaration
 	}
 	else if (sym == SYM_TIMES) { // 指针
 		depth = 0;
-		while (sym == SYM_TIMES) {
+		do {
 			++depth;
 			getsym();
-		}
+		} while (sym == SYM_TIMES);
 		vardeclaration(); // 有可能是数组
 		depth = 0; // 结束一个指针变量/数组
 	}
@@ -673,10 +673,40 @@ void array_visit(short arr_index, int dim, symset fsys) {
 	else if (dim != array_table[arr_index].dim)  error(34);//missing dimensions
 }
 
-void pointer_visit() { // 出现指针运算，递归处理可能出现的多层解引用
-	// todo
-}
+int pointer_visit(int cannotID_VARIABLE, symset fsys) { // 出现指针运算，递归处理可能出现的多层解引用
+	getsym();
+	if (sym == SYM_TIMES) {
+		getsym();
+		if (sym == SYM_TIMES || sym == SYM_IDENTIFIER) {
+			int dim = pointer_visit(cannotID_VARIABLE, fsys);
+			gen(LDA, 0, 0);
+			getsym();
+			return dim + 1;
+		} else if (sym == SYM_LPAREN) {
+			getsym();
+			int dim = pointer_visit(cannotID_VARIABLE, fsys);
+			if (sym == SYM_PLUS) {
+				getsym();
+				if (sym == SYM_NUMBER) gen(LIT, 0, num);
+				else error(41);
+			} else error(42);
+			getsym();
+			if (sym == SYM_RPAREN) getsym();
+			else error(22);
+		}
+	} else if (sym == SYM_IDENTIFIER) {
+		int i;
+		if ((i = position(id)) == 0)//if i = 0
+			error(11); // Undeclared identifier.
+		else {
+			if (table[i].kind == ID_VARIABLE) {
 
+			} else if (table[i].kind == ID_ARRAY) {
+				
+			}
+		}
+	}
+}
 //-------------输出当前代码块的中间代码
 //---------------------------------
 void listcode(int from, int to){
@@ -699,6 +729,9 @@ void factor(symset fsys){
 	test(facbegsys, fsys, 24);   
                                   
 	if (inset(sym, facbegsys)){
+		if (sym == SYM_TIMES) {// 右值是解引用指针
+			pointer_visit(0, fsys); // todo
+		}
 		if (sym == SYM_IDENTIFIER){
 			if ((i = position(id)) == 0)//if i = 0
 				error(11); // Undeclared identifier.
