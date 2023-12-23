@@ -673,7 +673,7 @@ void array_visit(short arr_index, int dim, symset fsys) {
 	else if (dim != array_table[arr_index].dim)  error(34);//missing dimensions
 }
 
-void pointer_visit() { // 出现指针运算，递归处理可能出现的多层解引用
+mask* pointer_visit(symset fsys) { // 出现指针运算，递归处理可能出现的多层解引用
 	// todo
 }
 
@@ -699,7 +699,10 @@ void factor(symset fsys){
 	test(facbegsys, fsys, 24);   
                                   
 	if (inset(sym, facbegsys)){
-		if (sym == SYM_IDENTIFIER){
+		if (sym == SYM_TIMES) {
+			// 解引用，可能有数组的指针形式
+		}
+		else if (sym == SYM_IDENTIFIER){
 			if ((i = position(id)) == 0)//if i = 0
 				error(11); // Undeclared identifier.
 			else{
@@ -900,8 +903,9 @@ void statement(symset fsys){
 	symset set1, set;
 	int count = 0;
 
-	if (sym == SYM_TIMES) { // 左值是解引用指针
-		// todo
+	if (sym == SYM_TIMES) { // 解引用，可能有数组的指针形式
+		mask* mk;
+		
 	}
 	else if (sym == SYM_IDENTIFIER){ // variable assignment
 		mask* mk;
