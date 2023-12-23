@@ -154,7 +154,9 @@ char* err_msg[] =
 /* 39 */	"The empty dimension must be the first one.",
 /* 40 */    "Illegal address operation.",
 /* 41 */    "Point offset not a number.",
-/* 42 */    "'+' expected."
+/* 42 */    "'+' expected.",
+/* 43 */    "There must be an identifier at the end of dequote.",
+/* 44 */    "Illegal dequotation."
 };
 
 //////////////////////////////////////////////////////////////////////
