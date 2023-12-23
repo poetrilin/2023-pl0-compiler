@@ -174,6 +174,7 @@ void test(symset s1, symset s2, int n){//test if error occurs
 } // test
 
 
+int depth;
 
 // enter object(constant, variable or procedre) into table.
 //-------------符号表
@@ -833,7 +834,8 @@ void expression(symset fsys){
 				//gen(LDA,0,0);//load the address of the array
 			}
 		}
-	} else {
+	}
+	else {
 		term(set);
 		while (sym == SYM_PLUS || sym == SYM_MINUS){
 			addop = sym;
