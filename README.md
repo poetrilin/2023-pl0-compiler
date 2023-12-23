@@ -2,17 +2,15 @@
 
 ### 1.0 任务进度（ddl是12.24）
 - 1、数组的变量声明，读写（done）
-- 2、输出语句print（done）
-- 3、指针的声明，赋值和访问
-- 4、数组元素读写的指针化表示
+- 2、输出语句 print（done）
+- 3、指针的声明，赋值和访问（done）
+- 4、数组元素读写的指针化表示（done）
 - 5、作用域算符 `::` 的实现（done）
 
 
- 
 ### 1.1 程序实现要求
 
 PL/0语言可以看成PASCAL语言的子集，它的编译程序是一个编译解释执行系统。PL/0的目标程序为假想栈式计算机的汇编语言，与具体计算机无关。
-
 
 其编译过程采用一趟扫描方式，以语法分析程序为核心，词法分析和代码生成程序都作为一个独立的过程，当语法分析需要读单词时就调用词法分析程序，而当语法分析正确需要生成相应的目标代码时，则调用代码生成程序。
 
@@ -41,13 +39,15 @@ Cond $\to$ **odd** Exp | Exp RelOp Exp
 
 RelOp $\to$ = | <> | < | > | <= | >=
 
-Exp $\to$ Term {+ Term | − Term}
+Exp $\to$ Term {+ Term | − Term} | & **indent**
 
 Term $\to$ Factor {∗ Factor | / Factor}
 
-Factor $\to$ **ident** | **number** | -Factor | ( Exp )
+Factor $\to$ **ident** | **number** | -Factor | ( Exp ) | Pointer
 
-其中的标识符 **ident** 是字母开头的字母数字串，**number** 是无符号整数，begin、**call**、const、
+Pointer $\to$ *Pointer | *(Pointer) | *(Pointer + **number**) | **indent**
+
+其中的标识符 **ident** 是字母开头的字母数字串，在引入了数组之后，后面可以接若干 `[number]`，**number** 是无符号整数，begin、**call**、const、
 do、end、if、odd、**procedure**、**then**、var、while 是保留字。
 
 ## ISA
@@ -161,3 +161,10 @@ do、end、if、odd、**procedure**、**then**、var、while 是保留字。
 
 词法分析和语法分析部分,每次进入一个新的域,就将`cur_domain`更新为当前域的index,并将该域的index作为domain属性赋给该域内的所有标识符.
 cur_domain类似于其它变量进行回溯处理即可。
+
+### 指针实现
+
+1. 实现引用操作，对变量取地址，与指针的赋值搭配使用。
+2. 构建处理指针表达式的新非终结符 Pointer，具体实现见 `pl0.c` 中的 `pointer_visit()` 函数。
+3. 注意指针表达式作为左值与右值的细微差别，涉及到指针变量的赋值和访问。
+4. 数组的指针化表达在同一函数中实现，旨在将 `array_visit()` 过程改成回溯的递归形式。
