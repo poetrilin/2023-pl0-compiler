@@ -1,0 +1,7 @@
+var a, b;
+begin
+a := rand();
+b := rand();
+print(a);
+print(b);
+end.
