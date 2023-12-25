@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#define NRW        12     // number of reserved words
+#define NRW        13     // number of reserved words
 #define TXMAX      500    // length of identifier table
 #define MAXNUMLEN  14     // maximum number of digits in numbers
 #define NSYM       15     // maximum number of symbols in array ssym and csym
@@ -14,6 +14,8 @@
 
 #define STACKSIZE  80000   // maximum storage
 #define MAX_DIM    100    // maximum dimensions of an array
+#define RAND_MAX   1024
+
 enum symtype
 {
     SYM_NULL,       // 空符号
@@ -52,7 +54,8 @@ enum symtype
 	SYM_LBRACKET,       // 左大括号
 	SYM_RBRACKET,       // 右大括号
     SYM_QUOTE,       // 引用符号
-    SYM_DOMAIN       // 作用域
+    SYM_DOMAIN,       // 作用域
+    SYM_RANDOM   // 
 };
 
 // idtype 定义了标识符的类型，包括常量、变量和过程
@@ -76,6 +79,7 @@ enum opcode
     JMP,  // 无条件跳转
     JPC,  // 条件跳转
     PRT,  // 打印
+    RDM,  // 随机
     STA,  // 将栈顶内容存入数组
     LDA,  // 将数组元素放入栈顶
     LEA,  // 将数组地址放入栈顶
@@ -156,7 +160,8 @@ char* err_msg[] =
 /* 41 */    "Point offset not a number.",
 /* 42 */    "'+' expected.",
 /* 43 */    "There must be an identifier at the end of dequote.",
-/* 44 */    "Illegal dequotation."
+/* 44 */    "Illegal dequotation.",
+/* 45 */    "Illegal rand()."
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -188,7 +193,7 @@ char* word[NRW + 1] =
 {
 	"", /* place holder */
 	"begin", "call", "const", "do", "end","if",
-	"odd", "procedure", "then", "var", "while", "print"
+	"odd", "procedure", "then", "var", "while", "print","rand"
 };
 
 /**
@@ -197,7 +202,7 @@ char* word[NRW + 1] =
 int wsym[NRW + 1] =
 {
 	SYM_NULL, SYM_BEGIN, SYM_CALL, SYM_CONST, SYM_DO, SYM_END,
-	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE, SYM_PRINT
+	SYM_IF, SYM_ODD, SYM_PROCEDURE, SYM_THEN, SYM_VAR, SYM_WHILE, SYM_PRINT, SYM_RANDOM
 };
 
 /**

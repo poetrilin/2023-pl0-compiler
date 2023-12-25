@@ -881,6 +881,22 @@ void factor(symset fsys){
 			 factor(fsys);
 			 gen(OPR, 0, OPR_NEG);//generate a OPR instruction
 		}
+		else if(sym==SYM_RANDOM){
+		getsym();
+		if(sym!=SYM_LPAREN)error(45);
+		int rand_num=RAND_MAX;
+		getsym();
+		if(sym == SYM_NUMBER){
+			rand_num=num;
+			getsym();
+		}
+		if(sym==SYM_RPAREN){
+		gen(RDM,0,rand_num);
+		}
+		else error(45);
+		getsym();
+		}
+
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);  // 一个因子处理完毕，遇到的 token 应在 fsys 集合中
 	} // if
 } // factor
@@ -1186,6 +1202,21 @@ void statement(symset fsys){
 		gen(PRT,0,count);
 		getsym();
 	}
+	else if(sym==SYM_RANDOM){
+		getsym();
+		if(sym!=SYM_LPAREN)error(45);
+		int rand_num=RAND_MAX;
+		getsym();
+		if(sym == SYM_NUMBER){
+			rand_num=num;
+			getsym();
+		}
+		if(sym==SYM_RPAREN){
+		gen(RDM,0,rand_num);
+		}
+		else error(45);
+		getsym();
+		}
 	test(fsys, phi, 19);
 } // statement
 			
@@ -1324,6 +1355,7 @@ void interpret(){
 	int top;       // top of stack
 	int b;         // program, base, and top-stack register
 	instruction i; // instruction register
+	int random_num;
 
 	printf("Begin executing PL/0 program.\n");
 
@@ -1455,6 +1487,11 @@ void interpret(){
 			}
 			printf("\n");
 			break;
+		case RDM:
+			//
+			random_num = rand()%(i.a);
+			stack[++top] = random_num;
+			break;
 		} // switch
 	}while (pc);
 	printf("End executing PL/0 program.\n");
@@ -1480,7 +1517,7 @@ int main (){
 	// create begin symbol sets
 	declbegsys = createset(SYM_CONST, SYM_VAR, SYM_PROCEDURE, SYM_NULL);
 	statbegsys = createset(SYM_BEGIN, SYM_CALL, SYM_IF, SYM_WHILE, SYM_NULL);
-	facbegsys = createset(SYM_DOMAIN , SYM_TIMES, SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS, SYM_NULL);
+	facbegsys = createset(SYM_DOMAIN , SYM_TIMES, SYM_IDENTIFIER, SYM_NUMBER, SYM_LPAREN, SYM_MINUS,SYM_RANDOM,SYM_NULL);
 
 	err = cc = cx = ll = 0; // initialize global variables
 	cur_domain = 0;

@@ -113,6 +113,9 @@ do、end、if、odd、**procedure**、**then**、var、while 是保留字。
 - 格式: PRT 0, A
 - 功能: 将栈顶的 A 个元素输出并弹出栈
 
+16. RDM (random) 
+    随机数生成放到栈顶
+
 
 **代码的具体形式：**
 
