@@ -882,19 +882,19 @@ void factor(symset fsys){
 			 gen(OPR, 0, OPR_NEG);//generate a OPR instruction
 		}
 		else if(sym==SYM_RANDOM){
-		getsym();
-		if(sym!=SYM_LPAREN)error(45);
-		int rand_num=RAND_MAX;
-		getsym();
-		if(sym == SYM_NUMBER){
-			rand_num=num;
 			getsym();
-		}
-		if(sym==SYM_RPAREN){
-		gen(RDM,0,rand_num);
-		}
-		else error(45);
-		getsym();
+			if(sym!=SYM_LPAREN)error(45);
+			int rand_num=0;
+			getsym();
+			if(sym == SYM_NUMBER){
+				rand_num=num;
+				getsym();
+			}
+			if(sym==SYM_RPAREN){
+			gen(RDM,rand_num,RAN_MAX);
+			}
+			else error(45);
+			getsym();
 		}
 
 		test(fsys, createset(SYM_LPAREN, SYM_NULL), 23);  // 一个因子处理完毕，遇到的 token 应在 fsys 集合中
@@ -1205,18 +1205,18 @@ void statement(symset fsys){
 	else if(sym==SYM_RANDOM){
 		getsym();
 		if(sym!=SYM_LPAREN)error(45);
-		int rand_num=RAND_MAX;
+		int rand_num=0;
 		getsym();
 		if(sym == SYM_NUMBER){
 			rand_num=num;
 			getsym();
 		}
 		if(sym==SYM_RPAREN){
-		gen(RDM,0,rand_num);
+		gen(RDM,rand_num,RAN_MAX);
 		}
 		else error(45);
 		getsym();
-		}
+	}
 	test(fsys, phi, 19);
 } // statement
 			
@@ -1489,7 +1489,14 @@ void interpret(){
 			break;
 		case RDM:
 			//
-			random_num = rand()%(i.a);
+			if(i.l==0) 		{
+				srand(time(NULL)) ;
+				random_num = rand()%(i.a);
+				}
+			else {
+				//if i.l!=0
+				random_num = rand()%(i.a);
+			}
 			stack[++top] = random_num;
 			break;
 		} // switch

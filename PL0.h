@@ -14,7 +14,7 @@
 
 #define STACKSIZE  80000   // maximum storage
 #define MAX_DIM    100    // maximum dimensions of an array
-#define RAND_MAX   1024
+#define RAN_MAX   1024
 
 enum symtype
 {
