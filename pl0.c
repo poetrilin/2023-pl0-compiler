@@ -883,18 +883,32 @@ void factor(symset fsys){
 			 gen(OPR, 0, OPR_NEG);//generate a OPR instruction
 		}
 		else if(sym==SYM_RANDOM){
+			int L = 0, R = RAN_MAX;
+			/*
+				功能：生成 [L, R] 上的随机数（要求L <= R）
+				代码：(RDM, L, R)
+				新增语法：Exp -> rand() | rand(number) | rand(number, number)
+				解释：
+					rand() 				L = 0,		R = RAN_MAX
+					rand(num)			L = 0,		R = num
+					rand(num1, num2)	L = num1,	R = num2
+			*/
 			getsym();
-			if(sym!=SYM_LPAREN)error(45);
-			int rand_num=0;
+			if (sym != SYM_LPAREN) error(45);
 			getsym();
-			if(sym == SYM_NUMBER){
-				rand_num=num;
+			if (sym == SYM_NUMBER) {
+				R = num;
 				getsym();
+				if (sym == SYM_COMMA) {
+					getsym();
+					if (sym == SYM_NUMBER)
+						if (num < R) error(45);
+						else L = R, R = num, getsym();
+					else error(45);
+				}
 			}
-			if(sym==SYM_RPAREN){
-			gen(RDM,rand_num,RAN_MAX);
-			}
-			else error(45);
+			if (sym != SYM_RPAREN) error(45);
+			gen(RDM, L, R);
 			getsym();
 		}
 
@@ -1203,21 +1217,6 @@ void statement(symset fsys){
 		gen(PRT,0,count);
 		getsym();
 	}
-	else if(sym==SYM_RANDOM){
-		getsym();
-		if(sym!=SYM_LPAREN)error(45);
-		int rand_num=0;
-		getsym();
-		if(sym == SYM_NUMBER){
-			rand_num=num;
-			getsym();
-		}
-		if(sym==SYM_RPAREN){
-		gen(RDM,rand_num,RAN_MAX);
-		}
-		else error(45);
-		getsym();
-	}
 	test(fsys, phi, 19);
 } // statement
 			
@@ -1489,16 +1488,8 @@ void interpret(){
 			printf("\n");
 			break;
 		case RDM:
-			//
-			if(i.l==0) {
-				srand(time(NULL)) ;
-				random_num = rand()%(i.a);
-				}
-			else {
-				//if i.l!=0
-				random_num = rand()%(i.a);
-			}
-			stack[++top] = random_num;
+			// [L, R] -> L + [0, R - L] -> L + number % (R - L + 1)
+			stack[++top] = rand() % (i.a - i.l + 1) + i.l;
 			break;
 		} // switch
 	}while (pc);
@@ -1507,6 +1498,7 @@ void interpret(){
 
 //////////////////////////////////////////////////////////////////////
 int main (){
+	srand(time(NULL));
 	FILE* hbin;
 	char s[80];
 	int i;
