@@ -4,6 +4,7 @@
 
 
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -1489,7 +1490,7 @@ void interpret(){
 			break;
 		case RDM:
 			//
-			if(i.l==0) 		{
+			if(i.l==0) {
 				srand(time(NULL)) ;
 				random_num = rand()%(i.a);
 				}
