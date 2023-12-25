@@ -1,7 +1,7 @@
-var a, b;
+var a, b, c;
 begin
 a := rand();
-b := rand();
-print(a);
-print(b);
+b := rand(233);
+c := rand(114, 514);
+print(a, b, c);
 end.
