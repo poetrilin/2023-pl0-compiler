@@ -2,7 +2,7 @@
 
 #define NRW        13     // number of reserved words
 #define TXMAX      500    // length of identifier table
-#define MAXNUMLEN  14     // maximum number of digits in numbers
+#define MAXNUMLEN  10     // maximum number of digits in numbers
 #define NSYM       15     // maximum number of symbols in array ssym and csym
 #define MAXIDLEN   10     // length of identifiers
 
@@ -13,8 +13,9 @@
 #define MAXSYM     30     // maximum number of symbols  
 
 #define STACKSIZE  80000   // maximum storage
-#define MAX_DIM    100    // maximum dimensions of an array
-#define RAN_MAX   1024
+#define MAX_DIM    100     // maximum dimensions of an array
+
+#define RAN_MAX    2147483647 // maximum randnum
 
 enum symtype
 {
@@ -55,7 +56,7 @@ enum symtype
 	SYM_RBRACKET,       // 右大括号
     SYM_QUOTE,       // 引用符号
     SYM_DOMAIN,       // 作用域
-    SYM_RANDOM   // 
+    SYM_RANDOM   // 随机数
 };
 
 // idtype 定义了标识符的类型，包括常量、变量和过程
@@ -226,10 +227,10 @@ char csym[NSYM + 1] =
 /**
  * @brief 虚拟机指令映射表
  */
-#define MAXINS   15
+#define MAXINS   16
 char* mnemonic[MAXINS] =
 {
-	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "PRT", "STA", "LDA", "LEA", "STI", "RES", "RET"
+	"LIT", "OPR", "LOD", "STO", "CAL", "INT", "JMP", "JPC", "PRT", "RDM", "STA", "LDA", "LEA", "STI", "RES", "RET"
 };
 
 /**
